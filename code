@@ -1,0 +1,178 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.preprocessing import StandardScaler
+
+# Load dataset (update with correct file path)
+file_path = "HousingData.csv"  # Update this with the actual file name
+df = pd.read_csv("C:/Users/yagne/Documents/HousingData.csv")
+
+# Display first few rows
+print("First 5 rows of dataset:")
+print(df.head())
+
+# Check for missing values
+print("\nMissing values per column:")
+print(df.isnull().sum())
+
+# Fill missing values (example: fill with mean)
+df.fillna(df.mean(), inplace=True)
+
+# Summary statistics
+print("\nDataset Summary:")
+print(df.describe())
+
+# Check column names and data types
+print("\nColumn Names and Data Types:")
+print(df.info())
+
+# Data Visualization
+plt.figure(figsize=(10, 6))
+sns.heatmap(df.corr(), annot=True, cmap='coolwarm')
+plt.title('Correlation Heatmap')
+plt.show()
+
+# Pairplot
+sns.pairplot(df)
+plt.show()
+
+# Handle outliers (example: remove rows with outliers in 'MEDV')
+q1 = df['MEDV'].quantile(0.25)
+q3 = df['MEDV'].quantile(0.75)
+iqr = q3 - q1
+lower_bound = q1 - 1.5 * iqr
+upper_bound = q3 + 1.5 * iqr
+df = df[(df['MEDV'] >= lower_bound) & (df['MEDV'] <= upper_bound)]
+
+# Feature Engineering (example: create new feature)
+df['LSTAT_SQ'] = df['LSTAT'] ** 2
+
+# Split data into features and target
+X = df.drop('MEDV', axis=1)  # Assuming 'MEDV' is the target variable
+y = df['MEDV']
+
+# Normalize the data
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Split data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+# Train a Linear Regression model
+lr_model = LinearRegression()
+lr_model.fit(X_train, y_train)
+
+# Make predictions
+lr_y_pred = lr_model.predict(X_test)
+
+# Evaluate the model
+lr_mse = mean_squared_error(y_test, lr_y_pred)
+lr_r2 = r2_score(y_test, lr_y_pred)
+
+print(f"Linear Regression Mean Squared Error: {lr_mse}")
+print(f"Linear Regression R^2 Score: {lr_r2}")
+
+# Train a Decision Tree model
+dt_model = DecisionTreeRegressor(random_state=42)
+dt_model.fit(X_train, y_train)
+
+# Make predictions
+dt_y_pred = dt_model.predict(X_test)
+
+# Evaluate the model
+dt_mse = mean_squared_error(y_test, dt_y_pred)
+dt_r2 = r2_score(y_test, dt_y_pred)
+
+print(f"Decision Tree Mean Squared Error: {dt_mse}")
+print(f"Decision Tree R^2 Score: {dt_r2}")
+
+# Train a Gradient Boosting model
+gb_model = GradientBoostingRegressor(random_state=42)
+gb_model.fit(X_train, y_train)
+
+# Make predictions
+gb_y_pred = gb_model.predict(X_test)
+
+# Evaluate the model
+gb_mse = mean_squared_error(y_test, gb_y_pred)
+gb_r2 = r2_score(y_test, gb_y_pred)
+
+print(f"Gradient Boosting Mean Squared Error: {gb_mse}")
+print(f"Gradient Boosting R^2 Score: {gb_r2}")
+
+# Hyperparameter tuning for Gradient Boosting
+param_grid = {
+    'n_estimators': [100, 200, 300],
+    'learning_rate': [0.01, 0.1, 0.2],
+    'max_depth': [3, 4, 5]
+}
+
+grid_search = GridSearchCV(estimator=gb_model, param_grid=param_grid, cv=5, scoring='neg_mean_squared_error', n_jobs=-1)
+grid_search.fit(X_train, y_train)
+
+best_gb_model = grid_search.best_estimator_
+
+# Make predictions with the best model
+best_gb_y_pred = best_gb_model.predict(X_test)
+
+# Evaluate the best model
+best_gb_mse = mean_squared_error(y_test, best_gb_y_pred)
+best_gb_r2 = r2_score(y_test, best_gb_y_pred)
+
+print(f"Best Gradient Boosting Mean Squared Error: {best_gb_mse}")
+print(f"Best Gradient Boosting R^2 Score: {best_gb_r2}")
+
+# Train a Random Forest model
+rf_model = RandomForestRegressor(random_state=42)
+rf_model.fit(X_train, y_train)
+
+# Make predictions
+rf_y_pred = rf_model.predict(X_test)
+
+# Evaluate the model
+rf_mse = mean_squared_error(y_test, rf_y_pred)
+rf_r2 = r2_score(y_test, rf_y_pred)
+
+print(f"Random Forest Mean Squared Error: {rf_mse}")
+print(f"Random Forest R^2 Score: {rf_r2}")
+
+# Feature importance
+feature_importances = rf_model.feature_importances_
+print("Feature Importances:", feature_importances)
+
+# Final Report & Insights
+print("\nFinal Report & Insights:")
+print(f"Linear Regression Mean Squared Error: {lr_mse}, R^2 Score: {lr_r2}")
+print(f"Decision Tree Mean Squared Error: {dt_mse}, R^2 Score: {dt_r2}")
+print(f"Gradient Boosting Mean Squared Error: {gb_mse}, R^2 Score: {gb_r2}")
+print(f"Best Gradient Boosting Mean Squared Error: {best_gb_mse}, R^2 Score: {best_gb_r2}")
+print(f"Random Forest Mean Squared Error: {rf_mse}, R^2 Score: {rf_r2}")
+
+# Visualizing model performance
+models = ['Linear Regression', 'Decision Tree', 'Gradient Boosting', 'Best Gradient Boosting', 'Random Forest']
+mse_scores = [lr_mse, dt_mse, gb_mse, best_gb_mse, rf_mse]
+r2_scores = [lr_r2, dt_r2, gb_r2, best_gb_r2, rf_r2]
+
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plt.barh(models, mse_scores, color='skyblue')
+plt.xlabel('Mean Squared Error')
+plt.title('Model Comparison (MSE)')
+
+plt.subplot(1, 2, 2)
+plt.barh(models, r2_scores, color='lightgreen')
+plt.xlabel('R^2 Score')
+plt.title('Model Comparison (R^2)')
+
+plt.tight_layout()
+plt.show()
+
+# Discussing real-world applications
+print("\nReal-World Applications:")
+print("The models developed can be used by real estate agencies to predict house prices based on various features.")
+print("This can help in making informed decisions regarding property investments and pricing strategies.")
